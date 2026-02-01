@@ -83,7 +83,7 @@
       position:relative; z-index:1;
       max-width: 980px;
       margin: 0 auto;
-      padding: 18px 14px 34px;
+      padding: 18px 14px 92px; /* room for Back to Main Menu button */
     }
 
     .topbar{
@@ -180,8 +180,7 @@
     .dot.current{ outline: 3px solid rgba(124,58,237,.28); }
     .dot.good{ background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.25); color:#14532d;}
     .dot.bad{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.22); color:#7f1d1d;}
-.dot.done{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.25); color:#78350f;}
-
+    .dot.done{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.25); color:#78350f;}
 
     .timerBox{
       display:flex; gap:10px; align-items:center;
@@ -277,18 +276,17 @@
 
     .side{ display:grid; gap: 14px; }
 
-    .mascot{ display:grid; grid-template-columns: 120px 1fr; gap: 12px; 
-align-items:center; }
-.buddyIcon{
-  width:120px; height:120px;
-  border-radius:999px;
-  background: rgba(255,255,255,.65);
-  border: 1px solid rgba(15,23,42,.10);
-  box-shadow: 0 12px 26px rgba(2,6,23,.08);
-  display:grid; place-items:center;
-  font-size: 54px;
-  user-select:none;
-}
+    .mascot{ display:grid; grid-template-columns: 120px 1fr; gap: 12px; align-items:center; }
+    .buddyIcon{
+      width:120px; height:120px;
+      border-radius:999px;
+      background: rgba(255,255,255,.65);
+      border: 1px solid rgba(15,23,42,.10);
+      box-shadow: 0 12px 26px rgba(2,6,23,.08);
+      display:grid; place-items:center;
+      font-size: 54px;
+      user-select:none;
+    }
 
     .talk{
       background: rgba(255,255,255,.88);
@@ -376,6 +374,20 @@ align-items:center; }
     }
 
     footer{ margin-top: 12px; color: rgba(100,116,139,.9); font-size: 12px; text-align:center; padding: 8px 0 2px; }
+
+    /* Back to Main Menu (single button only) */
+    .menuDock{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:max(12px, env(safe-area-inset-bottom));
+      z-index:60;
+      pointer-events:none;
+    }
+    .menuDock .btn{
+      pointer-events:auto;
+      text-decoration:none;
+    }
   </style>
 </head>
 
@@ -508,9 +520,7 @@ align-items:center; }
           </div>
           <div class="body">
             <div class="mascot">
-             <div class="buddyIcon floaty" aria-hidden="true">🧠</div>
-
-
+              <div class="buddyIcon floaty" aria-hidden="true">🧠</div>
               <div class="talk">
                 <h3 id="buddyTitle">Mission: Add tens then ones!</h3>
                 <p id="buddyText">Answer before time runs out. If you get stuck, follow the steps.</p>
@@ -552,6 +562,13 @@ align-items:center; }
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ✅ Single Back to Main Menu button only -->
+  <div class="menuDock" aria-label="Back to main menu">
+    <a class="btn" href="https://limkimsze-maker.github.io/P3_Mental_Sum_Challenge/" title="Back to Main Menu">
+      ⬅️ Back to Main Menu
+    </a>
   </div>
 
 <script>
@@ -673,10 +690,9 @@ function playSound(which){
    ========================= */
 let idx = 0;
 let score = 0;
-// status: null | "correct" | "timeout"
+// status: null | "correct" | "timeout" | "done"
 let status = Array(QUESTIONS.length).fill(null);
 let hadWrong = Array(QUESTIONS.length).fill(false); // any wrong attempt => no marks for that question
-
 
 let secondsTotal = settings.timing;
 let secondsLeft = secondsTotal;
@@ -713,8 +729,7 @@ function renderProgress(){
     if(i===idx) d.classList.add("current");
     if(status[i]==="correct") d.classList.add("good");
     if(status[i]==="timeout") d.classList.add("bad");
-if(status[i]==="done") d.classList.add("done");
-
+    if(status[i]==="done") d.classList.add("done");
     d.textContent = String(i+1);
     els.progressRow.appendChild(d);
   }
@@ -750,8 +765,7 @@ function startTimer(){
   els.ansInput.value = "";
   els.checkBtn.disabled = false;
 
-  // IMPORTANT: Next stays disabled during timed attempt.
-  // Only enabled after time-up (or during practice/time-up state).
+  // Next stays disabled during timed attempt.
   els.nextBtn.disabled = true;
 
   els.tryAgainBtn.style.display = "none";
@@ -883,15 +897,15 @@ function handleCorrect(){
   playSound("correct");
   confettiBoom(1600);
 
- const canScore = (!timedOutThisQ && !practiceMode && status[idx] !== "timeout" && !hadWrong[idx]);
+  const canScore = (!timedOutThisQ && !practiceMode && status[idx] !== "timeout" && !hadWrong[idx]);
 
-if(canScore && status[idx] !== "correct"){
-  status[idx] = "correct";
-  score++;
-} else {
-  // They got it correct eventually, but no marks (wrong attempt happened earlier)
-  if(status[idx] !== "timeout") status[idx] = "done";
-}
+  if(canScore && status[idx] !== "correct"){
+    status[idx] = "correct";
+    score++;
+  } else {
+    // They got it correct eventually, but no marks (wrong attempt happened earlier)
+    if(status[idx] !== "timeout") status[idx] = "done";
+  }
 
   renderProgress();
   updateSideUI();
@@ -900,7 +914,7 @@ if(canScore && status[idx] !== "correct"){
   els.ansInput.disabled = true;
   els.checkBtn.disabled = true;
 
-  // IMPORTANT: Do NOT allow pressing Next when correct.
+  // Do NOT allow pressing Next when correct.
   els.nextBtn.disabled = true;
 
   setStatus("Correct! 🎉 Next question in 2 seconds…", "good");
@@ -987,8 +1001,7 @@ function showResults(){
     d.textContent = String(i+1);
     if(status[i]==="correct") d.classList.add("good");
     if(status[i]==="timeout") d.classList.add("bad");
-if(status[i]==="done") d.classList.add("done");
-
+    if(status[i]==="done") d.classList.add("done");
     els.finalDots.appendChild(d);
   }
 }
@@ -998,8 +1011,7 @@ function restartAll(){
   idx = 0;
   score = 0;
   status = Array(QUESTIONS.length).fill(null);
-hadWrong = Array(QUESTIONS.length).fill(false);
-
+  hadWrong = Array(QUESTIONS.length).fill(false);
 
   els.resultsView.classList.remove("show");
   els.questionView.style.display = "block";
@@ -1068,7 +1080,5 @@ els.qTotalTxt.textContent = String(QUESTIONS.length);
 if(els.qCountPill) els.qCountPill.textContent = `${QUESTIONS.length} questions`;
 loadQuestion(0);
 </script>
-  <script src="https://limkimsze-maker.github.io/assets/nav.js"></script>
 </body>
 </html>
-
